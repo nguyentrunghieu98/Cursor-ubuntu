@@ -91,7 +91,7 @@ updateCursor() {
 
         # Download new Cursor AppImage using global APPIMAGE_PATH
         echo "Downloading new Cursor AppImage to $APPIMAGE_PATH..."
-        sudo curl -L "$CURSOR_DOWNLOAD_URL" -o "$APPIMAGE_PATH"
+        sudo cp "$CURSOR_DOWNLOAD_URL" "$APPIMAGE_PATH"
         echo "Making new AppImage executable..."
         sudo chmod +x "$APPIMAGE_PATH"
 
