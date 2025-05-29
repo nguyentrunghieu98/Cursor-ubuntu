@@ -16,7 +16,7 @@ installCursor() {
         echo "Installing Cursor AI IDE on Ubuntu..."
 
         # 📝 Enter the AppImage download URL
-        read -p "Enter Cursor AppImage download URL: " CURSOR_DOWNLOAD_URL
+        read -p "Enter Cursor AppImage download path in your laptop/PC: " CURSOR_DOWNLOAD_PATH
         # 📝 Enter the icon file name to download (e.g., cursor-icon.png or cursor-black-icon.png)
         read -p "Enter icon filename from GitHub (e.g., cursor-icon.png): " ICON_NAME_FROM_GITHUB
 
@@ -50,12 +50,28 @@ installCursor() {
         # Create install directory if not exists
         echo "Creating installation directory ${CURSOR_INSTALL_DIR}..."
         sudo mkdir -p "$CURSOR_INSTALL_DIR"
+        if [ $? -ne 0 ]; then
+            echo "❌ Failed to create installation directory. Please check permissions."
+            exit 1
+        fi
+        echo "Installation directory ${CURSOR_INSTALL_DIR} created successfully."
 
         # Download Cursor AppImage using global APPIMAGE_PATH
-        echo "Downloading Cursor AppImage to $APPIMAGE_PATH..."
-        sudo curl -L "$CURSOR_DOWNLOAD_URL" -o "$APPIMAGE_PATH"
+        echo "Move Cursor AppImage to $APPIMAGE_PATH..."
+        sudo mv "$CURSOR_DOWNLOAD_PATH" "$APPIMAGE_PATH"
+        if [ $? -ne 0 ]; then
+            echo "❌ Failed to move AppImage. Please check the URL and permissions."
+            exit 1
+        fi
+        echo "Cursor AppImage moved successfully."
+        # Make AppImage executable using global APPIMAGE_PATH
         echo "Making AppImage executable..."
         sudo chmod +x "$APPIMAGE_PATH"
+        if [ $? -ne 0 ]; then
+            echo "❌ Failed to make AppImage executable. Please check permissions."
+            exit 1
+        fi
+        echo "AppImage is now executable."
 
         # Download Cursor icon using global ICON_PATH
         echo "Downloading Cursor icon to $ICON_PATH..."
@@ -87,13 +103,33 @@ updateCursor() {
         echo "Updating Cursor AI IDE..."
 
         # 📝 Enter the AppImage download URL
-        read -p "Enter new Cursor AppImage download URL: " CURSOR_DOWNLOAD_URL
+        read -p "Enter new Cursor AppImage download URL: " CURSOR_DOWNLOAD_PATH
+
+        # Remove old AppImage
+        echo "Removing old Cursor AppImage at $APPIMAGE_PATH..."
+        sudo rm -f "$APPIMAGE_PATH"
+        if [ $? -ne 0 ]; then
+            echo "❌ Failed to remove old AppImage. Please check permissions."
+            exit 1
+        fi
+        echo "Old AppImage removed successfully."
 
         # Download new Cursor AppImage using global APPIMAGE_PATH
-        echo "Downloading new Cursor AppImage to $APPIMAGE_PATH..."
-        sudo cp "$CURSOR_DOWNLOAD_URL" "$APPIMAGE_PATH"
+        echo "Move new Cursor AppImage in $CURSOR_DOWNLOAD_PATH to $APPIMAGE_PATH..."
+        sudo mv "$CURSOR_DOWNLOAD_PATH" "$APPIMAGE_PATH"
+        if [ $? -ne 0 ]; then
+            echo "❌ Failed to move new AppImage. Please check the URL and permissions."
+            exit 1
+        fi
+        echo "New AppImage moved successfully."
+        # Make new AppImage executable
         echo "Making new AppImage executable..."
         sudo chmod +x "$APPIMAGE_PATH"
+        if [ $? -ne 0 ]; then
+            echo "❌ Failed to make new AppImage executable. Please check permissions."
+            exit 1
+        fi
+        echo "New AppImage is now executable."
 
         echo "✅ Cursor AI IDE update complete. Please restart Cursor if it was running."
     else
@@ -107,6 +143,8 @@ echo "Cursor AI IDE Management"
 echo "------------------------"
 echo "1. Install Cursor"
 echo "2. Update Cursor"
+echo "------------------------"
+
 read -p "Please choose an option (1 or 2): " choice
 
 case $choice in
