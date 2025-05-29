@@ -46,7 +46,7 @@ The script will:
 -   **During Installation:**
     -   Check for and install `curl` if missing.
     -   Check for and install `libfuse2` if missing (important for running AppImages).
-    -   Download the specified Cursor AppImage to `/opt/Cursor/cursor.appimage`.
+    -   Move the specified Cursor AppImage to `/opt/Cursor/cursor.appimage`.
     -   Make the AppImage executable.
     -   Download a chosen icon to `/opt/Cursor/cursor-icon.png`.
     -   Create a desktop entry (`/usr/share/applications/cursor.desktop`) for easy access.
@@ -57,7 +57,7 @@ The script will:
 ## Troubleshooting
 If you encounter any issues:
 1.  Ensure you have `sudo` privileges and an active internet connection.
-2.  Verify that the AppImage download URL you provided is correct and accessible.
+2.  Verify that the AppImage download Path you provided is correct and accessible.
 3.  Confirm the icon filename exists in the `images` directory of the `hieutt192/Cursor-ubuntu` GitHub repository.
 4.  If Cursor fails to start after installation, ensure `libfuse2` was installed correctly. The script attempts this, but you can manually check/install with `sudo apt update && sudo apt install libfuse2`.
 5.  Check script permissions (`chmod +x your_script_name.sh`).
