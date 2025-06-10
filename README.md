@@ -6,7 +6,7 @@ This is a guideline and script for installing or updating Cursor on Ubuntu.
 - Internet connection
 - `sudo` privileges
 - `curl` (the script will attempt to install it if missing)
-- `libfuse2` (the script will attempt to install it if missing, as it's often required for AppImages)
+- `libfuse2` (**Only for Ubuntu 22.04! Do NOT install on Ubuntu 24.04 as it may cause system issues.** See note below.)
 
 ---
 
@@ -20,6 +20,11 @@ You will be prompted to choose one of these icons during installation.
 ---
 
 ## ⚠️ NOTE
+- If you are using **Ubuntu 22.04**, you may need to install `libfuse2` to run AppImage files:
+    ```bash
+    sudo apt update && sudo apt install -y libfuse2
+    ```
+- **Do NOT install `libfuse2` on Ubuntu 24.04 or newer!** Installing this package on Ubuntu 24.04 can cause system graphical issues and is not supported. AppImage support on Ubuntu 24.04 may require different steps.
 - Make sure to download the Cursor AppImage file **before** running the script
 - For the best experience, restart your computer after installation
 - The script requires sudo privileges to create files in system directories

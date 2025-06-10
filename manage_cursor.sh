@@ -30,21 +30,6 @@ installCursor() {
             sudo apt-get update
             sudo apt-get install -y curl
         fi
-
-        # Check and install libfuse2 if not installed
-        if ! dpkg -s libfuse2 &> /dev/null && ! apt list --installed 2>/dev/null | grep -q "^libfuse2/"; then
-            echo "libfuse2 is not installed, which is often required for AppImages."
-            echo "Installing libfuse2..."
-            sudo apt-get update
-            sudo apt-get install -y libfuse2
-            if dpkg -s libfuse2 &> /dev/null || apt list --installed 2>/dev/null | grep -q "^libfuse2/"; then
-                echo "✅ libfuse2 installed successfully."
-            else
-                echo "⚠️  Failed to install libfuse2. AppImage might not run."
-            fi
-        else
-            echo "ℹ️ libfuse2 is already installed."
-        fi
         # --- End Dependency Checks ---
 
         # Create install directory if not exists
