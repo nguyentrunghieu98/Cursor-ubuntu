@@ -1,12 +1,36 @@
 # Cursor-ubuntu
 This is a guideline and script for installing or updating Cursor on Ubuntu.
 
+## 📝 Version History
+
+### 2.0 (Current)
+- **Automatic Download:** Script can auto-fetch and download the latest Cursor AppImage from the official website.
+- **Manual Path Option:** Option to specify a local AppImage file path if preferred or if auto-download fails.
+- **Icon Selection:** User can choose the application icon during setup.
+- **Easy Update:** The same options are available for updating Cursor to the latest version.
+- **Improved User Prompts:** Clear error messages and fallback options for a smoother experience.
+
+### 1.0 (Initial Release)
+- Basic installation and update of Cursor AppImage via manual file path only.
+- Icon selection during installation.
+- Creation of desktop entry for easy launching.
+
+---
+
 ## Prerequisites
 - Ubuntu 22.04 or a compatible Linux distribution
 - Internet connection
 - `sudo` privileges
 - `curl` (the script will attempt to install it if missing)
 - `libfuse2` (**Only for Ubuntu 22.04! Do NOT install on Ubuntu 24.04 as it may cause system issues.** See note below.)
+
+---
+
+## ✨ Features
+- **Automatic Download:** The script can automatically fetch and download the latest Cursor AppImage from the official website with a single selection.
+- **Manual Path Option:** If you prefer, or if auto-download fails, you can specify the path to a Cursor AppImage file you have already downloaded.
+- **Icon Selection:** Choose your preferred icon for the application during setup.
+- **Easy Update:** The same options are available for updating Cursor to the latest version.
 
 ---
 
@@ -35,20 +59,19 @@ You will be prompted to choose one of these icons during installation.
 ## 🚀 Installation/Update Steps
 
 1.  **Download the Management Script**
-    * Clone this repository or download the `manage_cursor.sh` (or your chosen script name) file from the `scripts` directory.
+    * Clone this repository or download the `manage_cursor.sh` file from the `scripts` directory.
     * Make the script executable:
         ```bash
         chmod +x scripts/manage_cursor.sh
         ```
 
 2.  **Follow Prompts:**
-    * **For Installation:**
-        * First, download the Cursor Linux AppImage from [Cursor's official download page](https://www.cursor.com/downloads).
-        * When prompted by the script, enter the **local file path** where you downloaded the Cursor AppImage (e.g., `~/Downloads/Cursor-x.y.z.AppImage`).
-        * Enter the desired icon filename from the repository (e.g., `cursor-icon.png` or `cursor-black-icon.png`).
-    * **For Update:**
-        * First, download the new version of the Cursor Linux AppImage.
-        * When prompted, enter the **local file path** where you downloaded the new Cursor AppImage.
+    * **For Installation/Update:**
+        * You will be asked how to provide the Cursor AppImage:
+            * **Option 1 (Recommended):** Auto-download the latest Cursor AppImage from the official website. The script will attempt to fetch and download the newest version automatically.
+                * If auto-download fails, you will see a clear error message and be prompted to enter the local file path manually.
+            * **Option 2:** Specify the local file path to a previously downloaded Cursor AppImage on your computer.
+        * You will also be prompted to enter the icon filename (e.g., `cursor-icon.png` or `cursor-black-icon.png`).
 
 3.  **Run the Script**
     * Run the script:
@@ -60,7 +83,6 @@ You will be prompted to choose one of these icons during installation.
         * Choose '2' to **Update Cursor**.
 
 4.  **Launch Cursor**
-
     * After restarting, you should find "Cursor AI IDE" in your application menu.
     * Alternatively, you can launch it from the terminal:
         ```bash

@@ -9,14 +9,59 @@ APPIMAGE_PATH="${CURSOR_INSTALL_DIR}/${APPIMAGE_FILENAME}"
 ICON_PATH="${CURSOR_INSTALL_DIR}/${ICON_FILENAME_ON_DISK}"
 DESKTOP_ENTRY_PATH="/usr/share/applications/cursor.desktop"
 
+# --- Download Latest Cursor AppImage Function ---
+download_latest_cursor_appimage() {
+    # API_URL="https://www.cursor.com/api/download?platform=linux-x64&releaseTrack=stable"
+    API_URL="https://www.cursor.com/api/download?platform=lin&releaseTrack=stable"
+    USER_AGENT="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+    DOWNLOAD_PATH="/tmp/latest-cursor.AppImage"
+    FINAL_URL=$(curl -sL -A "$USER_AGENT" "$API_URL" | jq -r '.url // .downloadUrl')
+    if [ -z "$FINAL_URL" ] || [ "$FINAL_URL" = "null" ]; then
+        echo "❌ Could not get the final AppImage URL from Cursor API."
+        return 1
+    fi
+    echo "Downloading latest Cursor AppImage from: $FINAL_URL"
+    wget -q -O "$DOWNLOAD_PATH" "$FINAL_URL"
+    if [ $? -eq 0 ] && [ -s "$DOWNLOAD_PATH" ]; then
+        echo "✅ Downloaded latest Cursor AppImage successfully!"
+        echo "$DOWNLOAD_PATH"
+        return 0
+    else
+        echo "❌ Failed to download the AppImage."
+        return 1
+    fi
+}
+
 # --- Installation Function ---
 installCursor() {
     # Check if the AppImage already exists using the global path
     if ! [ -f "$APPIMAGE_PATH" ]; then
         echo "Installing Cursor AI IDE on Ubuntu..."
 
-        # 📝 Enter the AppImage download URL
-        read -p "Enter Cursor AppImage download path in your laptop/PC: " CURSOR_DOWNLOAD_PATH
+        echo "How do you want to provide the Cursor AppImage?"
+        echo "1. Auto-download the latest AppImage from Cursor website (recommended)"
+        echo "2. Specify local file path manually"
+        read -p "Choose 1 or 2: " appimage_option
+
+        if [ "$appimage_option" = "1" ]; then
+            CURSOR_DOWNLOAD_PATH=$(download_latest_cursor_appimage)
+            if [ $? -ne 0 ]; then
+                echo "==============================="
+                echo "❌ Auto-download failed!"
+                echo "==============================="
+                echo "Would you like to specify the local file path manually instead? (y/n)"
+                read -r retry_option
+                if [[ "$retry_option" =~ ^[Yy]$ ]]; then
+                    read -p "Enter Cursor AppImage download path in your laptop/PC: " CURSOR_DOWNLOAD_PATH
+                else
+                    echo "Exiting installation."
+                    exit 1
+                fi
+            fi
+        else
+            # 📝 Enter the AppImage download URL
+            read -p "Enter Cursor AppImage download path in your laptop/PC: " CURSOR_DOWNLOAD_PATH
+        fi
         # 📝 Enter the icon file name to download (e.g., cursor-icon.png or cursor-black-icon.png)
         read -p "Enter icon filename from GitHub (e.g., cursor-icon.png): " ICON_NAME_FROM_GITHUB
 
@@ -87,8 +132,29 @@ updateCursor() {
     if [ -f "$APPIMAGE_PATH" ]; then
         echo "Updating Cursor AI IDE..."
 
-        # 📝 Enter the AppImage download URL
-        read -p "Enter new Cursor AppImage download URL: " CURSOR_DOWNLOAD_PATH
+        echo "How do you want to provide the new Cursor AppImage?"
+        echo "1. Auto-download the latest AppImage from Cursor website (recommended)"
+        echo "2. Specify local file path manually"
+        read -p "Choose 1 or 2: " appimage_option
+
+        if [ "$appimage_option" = "1" ]; then
+            CURSOR_DOWNLOAD_PATH=$(download_latest_cursor_appimage)
+            if [ $? -ne 0 ]; then
+                echo "==============================="
+                echo "❌ Auto-download failed!"
+                echo "==============================="
+                echo "Would you like to specify the local file path manually instead? (y/n)"
+                read -r retry_option
+                if [[ "$retry_option" =~ ^[Yy]$ ]]; then
+                    read -p "Enter new Cursor AppImage download path in your laptop/PC: " CURSOR_DOWNLOAD_PATH
+                else
+                    echo "Exiting update."
+                    exit 1
+                fi
+            fi
+        else
+            read -p "Enter new Cursor AppImage download path in your laptop/PC: " CURSOR_DOWNLOAD_PATH
+        fi
 
         # Remove old AppImage
         echo "Removing old Cursor AppImage at $APPIMAGE_PATH..."
