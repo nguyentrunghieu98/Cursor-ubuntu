@@ -11,8 +11,7 @@ DESKTOP_ENTRY_PATH="/usr/share/applications/cursor.desktop"
 
 # --- Download Latest Cursor AppImage Function ---
 download_latest_cursor_appimage() {
-    # API_URL="https://www.cursor.com/api/download?platform=linux-x64&releaseTrack=stable"
-    API_URL="https://www.cursor.com/api/download?platform=lin&releaseTrack=stable"
+    API_URL="https://www.cursor.com/api/download?platform=linux-x64&releaseTrack=stable"
     USER_AGENT="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     DOWNLOAD_PATH="/tmp/latest-cursor.AppImage"
     FINAL_URL=$(curl -sL -A "$USER_AGENT" "$API_URL" | jq -r '.url // .downloadUrl')
