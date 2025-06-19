@@ -21,16 +21,14 @@ To enhance the user experience, the script now uses the `figlet` library to disp
 
 **Example output:**
 ```
-|  \/  | __ _ _ __   __ _  __ _  ___ _ __  
-| |\/| |/ _` | '_ \ / _` |/ _` |/ _ \ '__| 
-| |  | | (_| | | | | (_| | (_| |  __/ |    
-|_|  |_|\__,_|_| |_|\__,_|\__, |\___|_|    
-                          |___/            
   ____                               _    ___   ___ ____  _____ 
  / ___|   _ _ __ ___  ___  _ __     / \  |_ _| |_ _|  _ \| ____|
 | |  | | | | '__/ __|/ _ \| '__|   / _ \  | |   | || | | |  _|  
 | |__| |_| | |  \__ \ (_) | |     / ___ \ | |   | || |_| | |___ 
  \____\__,_|_|  |___/\___/|_|    /_/   \_\___| |___|____/|_____|
+ 
+For Ubuntu 22.04
+------------------------------------------------- 
 
   /\_/\
  ( o.o )
@@ -38,6 +36,7 @@ To enhance the user experience, the script now uses the `figlet` library to disp
 ------------------------
 1. Install Cursor
 2. Update Cursor
+Note: If the menu reappears after choosing 1 or 2, please check the notification above for any issues.
 ------------------------
 ```
 
