@@ -8,7 +8,42 @@ This is a guideline and script for installing or updating Cursor on Ubuntu 22.04
 
 ## 📝 Version History
 
-### 2.1 (Current)
+
+---
+
+## 2.2 (Current) 
+**Add figlet Library for User-Friendly Terminal Display:**
+
+To enhance the user experience, the script now uses the `figlet` library to display banners and ASCII art in the terminal. This makes the installation and update process more visually friendly and engaging.
+
+- The script will automatically check and install `figlet` if it is not already present on your system.
+- Banners such as "Cursor AI IDE" and a cat ASCII art will be shown at the start of the script for a more welcoming interface.
+
+**Example output:**
+```
+|  \/  | __ _ _ __   __ _  __ _  ___ _ __  
+| |\/| |/ _` | '_ \ / _` |/ _` |/ _ \ '__| 
+| |  | | (_| | | | | (_| | (_| |  __/ |    
+|_|  |_|\__,_|_| |_|\__,_|\__, |\___|_|    
+                          |___/            
+  ____                               _    ___   ___ ____  _____ 
+ / ___|   _ _ __ ___  ___  _ __     / \  |_ _| |_ _|  _ \| ____|
+| |  | | | | '__/ __|/ _ \| '__|   / _ \  | |   | || | | |  _|  
+| |__| |_| | |  \__ \ (_) | |     / ___ \ | |   | || |_| | |___ 
+ \____\__,_|_|  |___/\___/|_|    /_/   \_\___| |___|____/|_____|
+
+  /\_/\
+ ( o.o )
+  > ^ <
+------------------------
+1. Install Cursor
+2. Update Cursor
+------------------------
+```
+
+This helps users quickly recognize the script's purpose and provides a more pleasant terminal experience.
+
+### 2.1 
 - **Ubuntu Version Check:** The script now checks if your system is running Ubuntu 22.04. If not, it will prompt you to use the appropriate installer for your Ubuntu version (e.g., Ubuntu 24.04).
 - **Automatic libfuse2 Installation:** The script will automatically check for and install `libfuse2` if it is missing, ensuring AppImage compatibility on Ubuntu 22.04. Since the Ubuntu Version Check is already implemented above, this automatic installation is safe and will not cause issues on other Ubuntu versions.
 
