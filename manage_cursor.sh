@@ -26,6 +26,45 @@ APPIMAGE_PATH="${CURSOR_INSTALL_DIR}/${APPIMAGE_FILENAME}"
 ICON_PATH="${CURSOR_INSTALL_DIR}/${ICON_FILENAME_ON_DISK}"
 DESKTOP_ENTRY_PATH="/usr/share/applications/cursor.desktop"
 
+# --- Utility Functions ---
+print_error() {
+    echo "==============================="
+    echo "❌ $1"
+    echo "==============================="
+}
+
+print_success() {
+    echo "==============================="
+    echo "✅ $1"
+    echo "==============================="
+}
+
+print_info() {
+    echo "==============================="
+    echo "ℹ️ $1"
+    echo "==============================="
+}
+
+# --- Dependency Management ---
+install_dependencies() {
+    local deps=("curl" "jq" "wget" "figlet")
+    
+    for dep in "${deps[@]}"; do
+        if ! command -v "$dep" &> /dev/null; then
+            echo "📦 $dep is not installed. Installing..."
+            sudo apt-get update
+            sudo apt-get install -y "$dep"
+        fi
+    done
+    
+    # Check libfuse2 separately as it uses dpkg
+    if ! dpkg -s libfuse2 &> /dev/null; then
+        echo "📦 libfuse2 is not installed. Installing..."
+        sudo apt-get update
+        sudo apt-get install -y libfuse2
+    fi
+}
+
 # --- Download Latest Cursor AppImage Function ---
 download_latest_cursor_appimage() {
     API_URL="https://www.cursor.com/api/download?platform=linux-x64&releaseTrack=stable"
@@ -34,13 +73,11 @@ download_latest_cursor_appimage() {
     FINAL_URL=$(curl -sL -A "$USER_AGENT" "$API_URL" | jq -r '.url // .downloadUrl')
 
     if [ -z "$FINAL_URL" ] || [ "$FINAL_URL" = "null" ]; then
-        echo "==============================="  
-        echo "❌ Could not get the final AppImage URL from Cursor API."
-        echo "==============================="
+        print_error "Could not get the final AppImage URL from Cursor API."
         return 1
     fi
 
-    echo "Downloading latest Cursor AppImage from: $FINAL_URL"
+    echo "⬇️ Downloading latest Cursor AppImage from: $FINAL_URL"
     wget -q -O "$DOWNLOAD_PATH" "$FINAL_URL"
 
     if [ $? -eq 0 ] && [ -s "$DOWNLOAD_PATH" ]; then
@@ -48,103 +85,122 @@ download_latest_cursor_appimage() {
         echo "$DOWNLOAD_PATH"
         return 0
     else
-        echo "==============================="
-        echo "❌ Failed to download the AppImage."
-        echo "==============================="
+        print_error "Failed to download the AppImage."
         return 1
     fi
 }
 
+# --- Download Functions ---
+get_appimage_path() {
+    local operation="$1"  # "install" or "update"
+    local action_text=""
+    
+    if [ "$operation" = "update" ]; then
+        action_text="new Cursor AppImage"
+    else
+        action_text="Cursor AppImage"
+    fi
+    
+    echo "How do you want to provide the $action_text?" >&2
+    echo "📥 1. Automatically download the latest version (recommended)" >&2
+    echo "📁 2. Specify local file path manually" >&2
+    echo "------------------------" >&2
+    read -rp "Choose 1 or 2: " appimage_option >&2
+
+    local cursor_download_path=""
+    
+    if [ "$appimage_option" = "1" ]; then
+        echo "⏳ Downloading the latest Cursor AppImage, please wait..." >&2
+        cursor_download_path=$(download_latest_cursor_appimage 2>/dev/null | tail -n 1)
+        if [ $? -ne 0 ] || [ ! -f "$cursor_download_path" ]; then
+            print_error "Auto-download failed!" >&2
+            echo "🤔 Would you like to specify the local file path manually instead? (y/n)" >&2
+            read -r retry_option >&2
+            if [[ "$retry_option" =~ ^[Yy]$ ]]; then
+                if [ "$operation" = "update" ]; then
+                    read -rp "📂 Enter new Cursor AppImage download path in your laptop/PC: " cursor_download_path >&2
+                else
+                    read -rp "📂 Enter Cursor AppImage download path in your laptop/PC: " cursor_download_path >&2
+                fi
+            else
+                echo "❌ Exiting." >&2
+                exit 1
+            fi
+        fi
+    else
+        if [ "$operation" = "update" ]; then
+            read -rp "📂 Enter new Cursor AppImage download path in your laptop/PC: " cursor_download_path >&2
+        else
+            read -rp "📂 Enter Cursor AppImage download path in your laptop/PC: " cursor_download_path >&2
+        fi
+    fi
+    
+    # Return only the path
+    echo "$cursor_download_path"
+}
+
+# --- AppImage Processing ---
+process_appimage() {
+    local source_path="$1"
+    local operation="$2"  # "install" or "update"
+    
+    if [ "$operation" = "update" ]; then
+        echo "🗑️ Removing old Cursor AppImage at $APPIMAGE_PATH..."
+        sudo rm -f "$APPIMAGE_PATH"
+        if [ $? -ne 0 ]; then
+            print_error "Failed to remove old AppImage. Please check permissions."
+            exit 1
+        fi
+        echo "✅ Old AppImage removed successfully."
+    fi
+
+    echo "📦 Move Cursor AppImage to $APPIMAGE_PATH..."
+    sudo mv "$source_path" "$APPIMAGE_PATH"
+    if [ $? -ne 0 ]; then
+        print_error "Failed to move AppImage. Please check the URL and permissions."
+        exit 1
+    fi
+    echo "✅ Cursor AppImage moved successfully."
+
+    echo "🔧 Setting proper permissions..."
+    # Set directory permissions (755 = rwxr-xr-x)
+    sudo chmod -R 755 "$CURSOR_INSTALL_DIR"
+    # Ensure AppImage is executable
+    sudo chmod +x "$APPIMAGE_PATH"
+    if [ $? -ne 0 ]; then
+        print_error "Failed to set permissions. Please check system configuration."
+        exit 1
+    fi
+    echo "✅ Permissions set successfully."
+}
+
 # --- Installation Function ---
 installCursor() {
-    # Check if the AppImage already exists using the global path
     if ! [ -f "$APPIMAGE_PATH" ]; then
         figlet -f slant "Install Cursor"
-        echo "Installing Cursor AI IDE on Ubuntu..."
-        echo "How do you want to provide the Cursor AppImage?"
-        echo "1. Automatically download the latest version (recommended)"
-        echo "2. Specify local file path manually"
-        echo "------------------------"
-        read -rp "Choose 1 or 2: " appimage_option
+        echo "💿 Installing Cursor AI IDE on Ubuntu..."
+        
+        install_dependencies
+        
+        local cursor_download_path=$(get_appimage_path "install")
+        
+        read -rp "🎨 Enter icon filename from GitHub (e.g., cursor-icon.png): " icon_name_from_github
+        local icon_download_url="https://raw.githubusercontent.com/hieutt192/Cursor-ubuntu/main/images/$icon_name_from_github"
 
-        if [ "$appimage_option" = "1" ]; then
-            # --- Dependency Checks ---
-            if ! command -v curl &> /dev/null; then
-                echo "curl is not installed. Installing..."
-                sudo apt-get update
-                sudo apt-get install -y curl
-            fi
-            if ! command -v jq &> /dev/null; then
-                echo "jq is not installed. Installing..."
-                sudo apt-get update
-                sudo apt-get install -y jq
-            fi
-            if ! command -v wget &> /dev/null; then
-                echo "wget is not installed. Installing..."
-                sudo apt-get update
-                sudo apt-get install -y wget
-            fi
-            if ! dpkg -s libfuse2 &> /dev/null; then
-                echo "libfuse2 is not installed. Installing..."
-                sudo apt-get update
-                sudo apt-get install -y libfuse2
-            fi
-            # --- End Dependency Checks ---
-
-            echo "⏳ Downloading the latest Cursor AppImage, please wait..."
-            CURSOR_DOWNLOAD_PATH=$(download_latest_cursor_appimage | tail -n 1)
-            if [ $? -ne 0 ] || [ ! -f "$CURSOR_DOWNLOAD_PATH" ]; then
-                echo "==============================="
-                echo "❌ Auto-download failed!"
-                echo "==============================="
-                echo "Would you like to specify the local file path manually instead? (y/n)"
-                read -r retry_option
-                if [[ "$retry_option" =~ ^[Yy]$ ]]; then
-                    read -rp "Enter Cursor AppImage download path in your laptop/PC: " CURSOR_DOWNLOAD_PATH
-                else
-                    echo "Exiting installation."
-                    exit 1
-                fi
-            fi
-        else
-            read -rp "Enter Cursor AppImage download path in your laptop/PC: " CURSOR_DOWNLOAD_PATH
-        fi
-
-        read -rp "Enter icon filename from GitHub (e.g., cursor-icon.png): " ICON_NAME_FROM_GITHUB
-        ICON_DOWNLOAD_URL="https://raw.githubusercontent.com/hieutt192/Cursor-ubuntu/main/images/$ICON_NAME_FROM_GITHUB"
-
-        echo "Creating installation directory ${CURSOR_INSTALL_DIR}..."
+        echo "📁 Creating installation directory ${CURSOR_INSTALL_DIR}..."
         sudo mkdir -p "$CURSOR_INSTALL_DIR"
         if [ $? -ne 0 ]; then
-            echo "❌ Failed to create installation directory. Please check permissions."
+            print_error "Failed to create installation directory. Please check permissions."
             exit 1
         fi
-        echo "Installation directory ${CURSOR_INSTALL_DIR} created successfully."
+        echo "✅ Installation directory ${CURSOR_INSTALL_DIR} created successfully."
 
-        echo "Move Cursor AppImage to $APPIMAGE_PATH..."
-        sudo mv "$CURSOR_DOWNLOAD_PATH" "$APPIMAGE_PATH"
-        if [ $? -ne 0 ]; then
-            echo "==============================="
-            echo "❌ Failed to move AppImage. Please check the URL and permissions."
-            echo "==============================="
-            exit 1
-        fi
-        echo "Cursor AppImage moved successfully."
+        process_appimage "$cursor_download_path" "install"
 
-        echo "Making AppImage executable..."
-        sudo chmod +x "$APPIMAGE_PATH"
-        if [ $? -ne 0 ]; then
-            echo "==============================="
-            echo "❌ Failed to make AppImage executable. Please check permissions."
-            echo "==============================="
-            exit 1
-        fi
-        echo "AppImage is now executable."
+        echo "🎨 Downloading Cursor icon to $ICON_PATH..."
+        sudo curl -L "$icon_download_url" -o "$ICON_PATH"
 
-        echo "Downloading Cursor icon to $ICON_PATH..."
-        sudo curl -L "$ICON_DOWNLOAD_URL" -o "$ICON_PATH"
-
-        echo "Creating .desktop entry for Cursor..."
+        echo "🖥️ Creating .desktop entry for Cursor..."
         sudo tee "$DESKTOP_ENTRY_PATH" >/dev/null <<EOL
 [Desktop Entry]
 Name=Cursor AI IDE
@@ -155,121 +211,43 @@ Categories=Development;
 MimeType=x-scheme-handler/cursor;
 EOL
 
-        echo "==============================="
-        echo "✅ Cursor AI IDE installation complete. You can find it in your application menu."
-        echo "==============================="
+        # Set standard permissions for .desktop file (644 = rw-r--r--)
+        echo "🔧 Setting desktop entry permissions..."
+        sudo chmod 644 "$DESKTOP_ENTRY_PATH"
+        if [ $? -ne 0 ]; then
+            print_error "Failed to set desktop entry permissions."
+            exit 1
+        fi
+        echo "✅ Desktop entry created with proper permissions."
+
+        print_success "Cursor AI IDE installation complete. You can find it in your application menu."
     else
-        echo "==============================="
-        echo "ℹ️ Cursor AI IDE seems to be already installed at $APPIMAGE_PATH."
-        echo "If you want to update, please choose the update option."
-        echo "==============================="
+        print_info "Cursor AI IDE seems to be already installed at $APPIMAGE_PATH. If you want to update, please choose the update option."
         exec "$0"
     fi
 }
 
 # --- Update Function ---
 updateCursor() {
-    # Uses global APPIMAGE_PATH
     if [ -f "$APPIMAGE_PATH" ]; then
         figlet -f slant "Update Cursor"
-        echo "Updating Cursor AI IDE..."
-        echo "How do you want to provide the new Cursor AppImage?"
-        echo "1. Automatically download the latest version (recommended)"
-        echo "2. Specify local file path manually"
-        echo "------------------------"
-        read -rp "Choose 1 or 2: " appimage_option
+        echo "🆙 Updating Cursor AI IDE..."
+        
+        install_dependencies
+        
+        local cursor_download_path=$(get_appimage_path "update")
+        
+        process_appimage "$cursor_download_path" "update"
 
-        if [ "$appimage_option" = "1" ]; then
-            # --- Dependency Checks ---
-            if ! command -v curl &> /dev/null; then
-                echo "curl is not installed. Installing..."
-                sudo apt-get update
-                sudo apt-get install -y curl
-            fi
-            if ! command -v jq &> /dev/null; then
-                echo "jq is not installed. Installing..."
-                sudo apt-get update
-                sudo apt-get install -y jq
-            fi
-            if ! command -v wget &> /dev/null; then
-                echo "wget is not installed. Installing..."
-                sudo apt-get update
-                sudo apt-get install -y wget
-            fi
-            if ! dpkg -s libfuse2 &> /dev/null; then
-                echo "libfuse2 is not installed. Installing..."
-                sudo apt-get update
-                sudo apt-get install -y libfuse2
-            fi
-            # --- End Dependency Checks ---
-            
-            echo "⏳ Downloading the latest Cursor AppImage, please wait..."
-            CURSOR_DOWNLOAD_PATH=$(download_latest_cursor_appimage | tail -n 1)
-            if [ $? -ne 0 ] || [ ! -f "$CURSOR_DOWNLOAD_PATH" ]; then
-                echo "==============================="
-                echo "❌ Auto-download failed!"
-                echo "==============================="
-                echo "Would you like to specify the local file path manually instead? (y/n)"
-                read -r retry_option
-                if [[ "$retry_option" =~ ^[Yy]$ ]]; then
-                    read -rp "Enter new Cursor AppImage download path in your laptop/PC: " CURSOR_DOWNLOAD_PATH
-                else
-                    echo "Exiting update."
-                    exit 1
-                fi
-            fi
-        else
-            read -rp "Enter new Cursor AppImage download path in your laptop/PC: " CURSOR_DOWNLOAD_PATH
-        fi
-
-        echo "Removing old Cursor AppImage at $APPIMAGE_PATH..."
-        sudo rm -f "$APPIMAGE_PATH"
-        if [ $? -ne 0 ]; then
-            echo "==============================="
-            echo "❌ Failed to remove old AppImage. Please check permissions."
-            echo "==============================="
-            exit 1
-        fi
-        echo "Old AppImage removed successfully."
-
-        echo "Move new Cursor AppImage in $CURSOR_DOWNLOAD_PATH to $APPIMAGE_PATH..."
-        sudo mv "$CURSOR_DOWNLOAD_PATH" "$APPIMAGE_PATH"
-        if [ $? -ne 0 ]; then
-            echo "==============================="
-            echo "❌ Failed to move new AppImage. Please check the URL and permissions."
-            echo "==============================="
-            exit 1
-        fi
-        echo "New AppImage moved successfully."
-
-        echo "Making new AppImage executable..."
-        sudo chmod +x "$APPIMAGE_PATH"
-        if [ $? -ne 0 ]; then
-            echo "==============================="
-            echo "❌ Failed to make new AppImage executable. Please check permissions."
-            echo "==============================="
-            exit 1
-        fi
-        echo "New AppImage is now executable."
-
-        echo "==============================="
-        echo "✅ Cursor AI IDE update complete. Please restart Cursor if it was running."
-        echo "==============================="
+        print_success "Cursor AI IDE update complete. Please restart Cursor if it was running."
     else
-        echo "==============================="
-        echo "❌ Cursor AI IDE is not installed. Please run the installer first."
-        echo "==============================="
+        print_error "Cursor AI IDE is not installed. Please run the installer first."
         exec "$0"
     fi
 }
 
 # --- Main Menu ---
-# Ensure figlet is installed for banner
-if ! command -v figlet &> /dev/null; then
-    echo "figlet is not installed. Installing..."
-    sudo apt-get update
-    sudo apt-get install -y figlet
-fi
+install_dependencies
 
 figlet -f slant "Cursor AI IDE"
 echo "For Ubuntu 22.04"
@@ -278,8 +256,8 @@ echo "  /\\_/\\"
 echo " ( o.o )"
 echo "  > ^ <"
 echo "------------------------"
-echo "1. Install Cursor"
-echo "2. Update Cursor"
+echo "💿 1. Install Cursor"
+echo "🆙 2. Update Cursor"
 echo "Note: If the menu reappears after choosing 1 or 2, check any error message above."
 echo "------------------------"
 
@@ -293,9 +271,7 @@ case $choice in
         updateCursor
         ;;
     *)
-        echo "==============================="
-        echo "❌ Invalid option. Exiting."
-        echo "==============================="
+        print_error "Invalid option. Exiting."
         exit 1
         ;;
 esac
