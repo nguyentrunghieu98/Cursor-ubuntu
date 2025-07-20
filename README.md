@@ -169,3 +169,20 @@ To uninstall Cursor:
     ```zsh
     sudo rm -f /usr/share/applications/cursor.desktop
     ```
+
+
+
+```
+# Install 'cursor' to shell
+function cursor {
+    (
+        if [[ $# = 0 ]]; then
+            nohup /opt/Cursor/cursor.AppImage >/dev/null 2>&1 &
+        else
+            local argPath="$1"
+            [[ $1 = /* ]] && argPath="$1" || argPath="$PWD/${1#./}"
+            nohup /opt/Cursor/cursor.AppImage "$argPath" >/dev/null 2>&1 &
+        fi
+    ) >/dev/null 2>&1
+}
+```
